@@ -1,13 +1,11 @@
-#include <time.h>
-#include "secrets.h"
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
 #include <ArduinoJson.h> //https://github.com/bblanchon/ArduinoJson (use v6.xx)
-#include <PubSubClient.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h> //https://github.com/knolleary/pubsubclient
 #include <SoftwareSerial.h>
 #include <WiFiClientSecure.h>
-
-#define DEBUG true
+#include "secrets.h"
+#include <time.h>
 
 const int MQTT_PORT = 8883;
 const char MQTT_SUB_TOPIC[] = "entrygate/valid";
@@ -19,6 +17,7 @@ WiFiClientSecure net;
 // ESP RX => Mega Pin 3 (3 in binary is 11)
 SoftwareSerial Mega(19, 18);
 
+// SSL Certificates for AWS IoT Core Authorization
 BearSSL::X509List cert(cacert);
 BearSSL::X509List client_crt(client_cert);
 BearSSL::PrivateKey key(privkey);
@@ -84,6 +83,9 @@ void NTPConnect(void)
   Serial.print(asctime(&timeinfo));
 }
 
+/**
+ * Function checks if the ESP8266 is connected to the WiFi network and then connects to AWS IoT Core
+ */
 void checkWiFiThenMQTT(void)
 {
   connectToWiFi("Checking WiFi");
@@ -160,7 +162,7 @@ void sendDataToAWS(void)
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("starting setup");
+  Serial.println("Starting Setup");
 
   Mega.begin(115200); // your esp's baud rate might be different
   delay(2000);

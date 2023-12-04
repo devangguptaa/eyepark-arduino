@@ -1,14 +1,12 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson (use v6.xx)
-#include <Servo.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <SPI.h>
 #include <MFRC522.h>
+#include <Servo.h>
+#include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_SSD1306.h>
 
-#define DEBUG true
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
@@ -25,7 +23,6 @@
 #define TRIG_PIN 6
 #define ECHO_PIN 7
 
-bool cardPresent = false;
 bool validCar = false;
 
 MFRC522 RC522_EntryGate(SDA_DIO, RESET_DIO);
@@ -38,7 +35,7 @@ double calcDist();
 String prepareDataForEntryGate(String rfidTag, String topic);
 String prepareDataForBay(String rfidTag, String topic, String bayNum, String parked);
 String prepareDataForAdmin(String message, String topic);
-String sendDataToWiFiBoard(String command, const int timeout, boolean debug);
+String sendDataToWiFiBoard(String command, const int timeout);
 void displayDisplayCenter(String text);
 void setup();
 void loop();
@@ -124,11 +121,10 @@ String prepareDataForAdmin(String message, String topic)
  * Sends the data to the WiFi board and waits for the response
  * @param command The command to be sent to the WiFi board in JSON format
  * @param timeout The timeout to wait for the response
- * @param debug Whether to print the response to the serial monitor or not
  * @return The response from the WiFi board
  */
 
-String sendDataToWiFiBoard(String command, const int timeout, boolean debug)
+String sendDataToWiFiBoard(String command, const int timeout)
 {
   String response = "";
 
@@ -153,10 +149,8 @@ String sendDataToWiFiBoard(String command, const int timeout, boolean debug)
       }
     }
   }
-  if (debug)
-  {
-    Serial.print(response);
-  }
+
+  Serial.print(response);
 
   return response;
 }
@@ -216,8 +210,6 @@ void setup()
 }
 void loop()
 {
-  // Serial.print("Light Sensor");
-  // Serial.println(analogRead(LIGHT_SENSOR));
   servo.write(0);
 
   digitalWrite(ENTRY_RED, HIGH);
@@ -226,29 +218,27 @@ void loop()
   display.fillRect(0, 16, SCREEN_WIDTH, 48, SSD1306_BLACK);
   displayDisplayCenter("Welcome");
 
-  if (DEBUG == true)
+  if (Serial1.available())
   {
     Serial.print("buffer: ");
-    if (Serial1.available())
-    {
-      String espBuf;
-      long int time = millis();
+    String espBuf;
+    long int time = millis();
 
-      while ((time + 1000) > millis())
+    while ((time + 1000) > millis())
+    {
+      while (Serial1.available())
       {
-        while (Serial1.available())
-        {
-          // The esp has data so display its output to the serial window
-          char c = Serial1.read(); // read the next character.
-          espBuf += c;
-        }
+        // The esp has data so display its output to the serial window
+        char c = Serial1.read(); // read the next character.
+        espBuf += c;
       }
-      Serial.print(espBuf);
     }
+    Serial.print(espBuf);
     Serial.println(" endbuffer");
   }
 
   double distance_cm = calcDist();
+  // Checks if the RFID tag is present in the Entry Gate
   if (RC522_EntryGate.PICC_IsNewCardPresent() && RC522_EntryGate.PICC_ReadCardSerial())
   {
     Serial.println("Card detected:");
@@ -259,15 +249,12 @@ void loop()
       rfidTag += String(RC522_EntryGate.uid.uidByte[i], HEX);
     }
     Serial.println(rfidTag);
+    // Distance less than 50 indicates car is present in front of the gate
     if (distance_cm <= 50)
     {
-
       String preparedData = prepareDataForEntryGate(rfidTag, "entrygate/verify");
-      if (DEBUG == true)
-      {
-        Serial.println(preparedData);
-      }
-      sendDataToWiFiBoard(preparedData, 10000, DEBUG);
+      Serial.println(preparedData);
+      sendDataToWiFiBoard(preparedData, 10000);
       if (validCar)
       {
         displayDisplayCenter("GO");
@@ -299,31 +286,22 @@ void loop()
     Serial.println(rfidTag);
 
     String preparedData = prepareDataForBay(rfidTag, "bay/verify", "2", "true");
-    if (DEBUG == true)
-    {
-      Serial.println(preparedData);
-    }
-    sendDataToWiFiBoard(preparedData, 1000, DEBUG);
+    Serial.println(preparedData);
+    sendDataToWiFiBoard(preparedData, 1000);
   }
   else
   {
     String preparedData = prepareDataForBay("", "bay/verify", "2", "false");
-    if (DEBUG == true)
-    {
-      Serial.println(preparedData);
-    }
-    sendDataToWiFiBoard(preparedData, 1000, DEBUG);
+    Serial.println(preparedData);
+    sendDataToWiFiBoard(preparedData, 1000);
   }
 
   if (analogRead(LIGHT_SENSOR) < 200 && digitalRead(MOTION_SENSOR) == 1)
   {
     Serial.println("Light Low and motion Detected");
     String preparedData = prepareDataForAdmin("Low light and Motion detected", "admin/warn");
-    if (DEBUG == true)
-    {
-      Serial.println(preparedData);
-    }
-    sendDataToWiFiBoard(preparedData, 2000, DEBUG);
+    Serial.println(preparedData);
+    sendDataToWiFiBoard(preparedData, 2000);
     for (int i = 0; i < 5; i++)
     {
       tone(BUZZER_PIN, 1000);
@@ -335,3 +313,5 @@ void loop()
   }
   delay(2000);
 }
+
+// ***********************

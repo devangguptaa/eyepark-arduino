@@ -1,11 +1,10 @@
-#include <WiFi.h>
-#include <HTTPClient.h>
+#include <ArduinoJson.h> //https://github.com/bblanchon/ArduinoJson (use v6.xx)
 #include "esp_camera.h"
-#include <ArduinoJson.h>
-#include "secrets.h"
-#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 #include <MQTTClient.h>
-#include <ArduinoJson.h>
+#include "secrets.h"
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
 
 // OV2640 camera module pins (CAMERA_MODEL_AI_THINKER)
 #define PWDN_GPIO_NUM 32
@@ -228,8 +227,6 @@ void setup()
   // Connect to the MQTT broker on the AWS endpoint we defined earlier
   client.begin(AWS_IOT_ENDPOINT, 8883, net);
 
-  // Create a message handler
-  // client.onMessage(messageHandler);
   Serial.print("Connecting to AWS IOT");
 
   while (!client.connect(THINGNAME))
@@ -243,9 +240,6 @@ void setup()
     Serial.println("AWS IoT Timeout!");
     return;
   }
-
-  // Subscribe to a topic
-  // client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC);
 
   Serial.println("AWS IoT Connected!");
 }
