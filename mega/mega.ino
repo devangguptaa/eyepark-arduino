@@ -128,7 +128,7 @@ String sendDataToWiFiBoard(String command, const int timeout)
 {
   String response = "";
 
-  Serial1.print(command); // send the read character to the esp8266
+  Serial1.print(command); // Send the JSON to the WiFi board
 
   long int time = millis();
 
@@ -136,8 +136,7 @@ String sendDataToWiFiBoard(String command, const int timeout)
   {
     while (Serial1.available())
     {
-      // The esp has data so display its output to the serial window
-      char c = Serial1.read(); // read the next character.
+      char c = Serial1.read(); // Read the character from the WiFi board
       response += c;
       if (response == "valid")
       {
@@ -228,8 +227,7 @@ void loop()
     {
       while (Serial1.available())
       {
-        // The esp has data so display its output to the serial window
-        char c = Serial1.read(); // read the next character.
+        char c = Serial1.read();
         espBuf += c;
       }
     }
@@ -273,7 +271,9 @@ void loop()
       displayDisplayCenter("Come Closer");
     }
   }
+
   RC522_Bay.PCD_Init();
+  // Check if a car is parked in the bay
   if (RC522_Bay.PICC_IsNewCardPresent() && RC522_Bay.PICC_ReadCardSerial())
   {
     Serial.println("Card from bay detected:");
@@ -296,6 +296,7 @@ void loop()
     sendDataToWiFiBoard(preparedData, 1000);
   }
 
+  // Check if low light and motion detected
   if (analogRead(LIGHT_SENSOR) < 200 && digitalRead(MOTION_SENSOR) == 1)
   {
     Serial.println("Light Low and motion Detected");

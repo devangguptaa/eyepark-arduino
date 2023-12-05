@@ -103,7 +103,7 @@ void clickImage()
       Serial.println("Failed to upload image to AWS S3");
     }
 
-    delay(10000); // Delay for 5 seconds before capturing the next image
+    delay(10000);
   }
 
   // Free memory used by the captured image
@@ -120,7 +120,7 @@ bool uploadImageToS3(uint8_t *imageData, size_t imageLen)
   HTTPClient http;
   String filename = "bay2/" + currentDateTime();
   String api_link = getPreSignedURL + filename;
-  http.begin(api_link); // Replace with your API endpoint
+  http.begin(api_link);
   int httpCode = http.GET();
 
   if (httpCode > 0)
@@ -129,12 +129,10 @@ bool uploadImageToS3(uint8_t *imageData, size_t imageLen)
     {
       String payload = http.getString();
 
-      // Parse JSON
       DynamicJsonDocument jsonDoc(1024);
       deserializeJson(jsonDoc, payload);
 
-      // Access JSON data
-      url = jsonDoc["url"]; // Replace with the actual key in your JSON response
+      url = jsonDoc["url"];
       Serial.print("Value: ");
       Serial.println(url);
     }
@@ -224,7 +222,7 @@ void setup()
   net.setCertificate(AWS_CERT_CRT);
   net.setPrivateKey(AWS_CERT_PRIVATE);
 
-  // Connect to the MQTT broker on the AWS endpoint we defined earlier
+  // Connect to the MQTT broker on the AWS endpoint
   client.begin(AWS_IOT_ENDPOINT, 8883, net);
 
   Serial.print("Connecting to AWS IOT");

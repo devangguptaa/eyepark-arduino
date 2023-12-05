@@ -13,8 +13,8 @@ const char MQTT_SUB_TOPIC[] = "entrygate/valid";
 uint8_t DST = 0;
 WiFiClientSecure net;
 
-// ESP TX => Mega Pin 19 (2 in binary is 10)
-// ESP RX => Mega Pin 3 (3 in binary is 11)
+// ESP TX => Mega Pin 19(RX1)
+// ESP RX => Mega Pin 18 (TX1)
 SoftwareSerial Mega(19, 18);
 
 // SSL Certificates for AWS IoT Core Authorization
@@ -149,7 +149,6 @@ void sendDataToAWS(void)
     return;
   }
   const char *mqttTopic = doc["topic"];
-  // parsing succeeded, continue and set time
   doc["time"] = String(millis());
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer);
@@ -164,7 +163,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("Starting Setup");
 
-  Mega.begin(115200); // your esp's baud rate might be different
+  Mega.begin(115200);
   delay(2000);
 
   connectToWiFi(String("Attempting to connect to SSID: ") + String(ssid));
